@@ -19,7 +19,14 @@ export async function generateLogo(companyName: string, industry: string, colors
   });
 
   if (!response.ok) {
-    throw new Error("Failed to generate logo");
+    const errorData = await response.json().catch(() => ({}));
+    const details = errorData.details || "";
+    
+    if (details.includes("API key not valid") || details.includes("API_KEY_INVALID")) {
+      throw new Error("Invalid Gemini API Key. Please configure a valid API key in the AI Studio Secrets panel.");
+    }
+    
+    throw new Error(errorData.error || "Failed to generate logo");
   }
 
   return response.json();

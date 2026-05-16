@@ -6,10 +6,6 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // Initialize Gemini if key exists
-  const apiKey = process.env.GEMINI_API_KEY || "";
-  const ai = new GoogleGenAI({ apiKey });
-
   // Body parsing middleware
   app.use(express.json());
 
@@ -21,6 +17,10 @@ async function startServer() {
   // Logo Generation API Endpoint
   app.post("/api/generate", async (req, res) => {
     try {
+      if (!process.env.GEMINI_API_KEY) {
+        throw new Error("GEMINI_API_KEY is not configured. Please add it in AI Studio settings.");
+      }
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const { companyName, industry, colors } = req.body;
       
       const prompt = `Design a modern, minimalist logo for a company named "${companyName}" in the "${industry}" industry.
@@ -34,7 +34,7 @@ async function startServer() {
       Return the result in JSON format.`;
     
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-2.5-flash",
         contents: prompt,
         config: {
           responseMimeType: "application/json",
@@ -59,11 +59,13 @@ async function startServer() {
         }
       });
     
-      const result = JSON.parse(response.text || "{}");
+      let responseText = response.text || "{}";
+      responseText = responseText.replace(/^```(json)?\n?/i, "").replace(/\n?```$/i, "").trim();
+      const result = JSON.parse(responseText);
       res.json(result);
-    } catch (error) {
-      console.error("AI Generation Error:", error);
-      res.status(500).json({ error: "Failed to generate logo" });
+    } catch (error: any) {
+      console.error("AI Generation Error:", error?.message || error);
+      res.status(500).json({ error: "Failed to generate logo", details: error?.message || String(error) });
     }
   });
 

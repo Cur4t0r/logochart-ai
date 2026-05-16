@@ -27,8 +27,9 @@ const handleSubmit = async () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: formData.value.name, logoData: result })
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Generation failed:', error);
+    alert(error.message || 'An error occurred during generation. Make sure GEMINI_API_KEY is set in secrets.');
   } finally {
     loading.value = false;
   }
